@@ -1,0 +1,10 @@
+[theme]
+base = "dark"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+# Uploaded files are not part of any workflow yet; keep the limit small so a
+# stray large upload cannot exhaust the container's memory.
+maxUploadSize = 5

@@ -1,0 +1,23 @@
+{
+  "id": "scouts_v2_0",
+  "name": "Scouts V2 -  Default  - Holybro Config",
+  "description": null,
+  "n_rotors": 4,
+  "frame_id": "x500-v2",
+  "motor_id": "holybro-2216-920kv",
+  "prop_id": "t1045ii",
+  "esc_id": "blheli-s-20a",
+  "battery_id": "upgrade-energy-red-v4-4s2p-10000",
+  "payload_id": "x500v2-avionics",
+  "misc_mass_g": 80.0,
+  "thrust_table": null,
+  "assumptions": {
+    "bec_efficiency": 0.9,
+    "figure_of_merit": 0.65,
+    "dod_limit": 0.85,
+    "altitude_m": 0.0,
+    "temperature_c": 15.0,
+    "wiring_resistance_mohm": 3.0,
+    "reserve_fraction": 0.0
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "t1045ii",
+  "name": "T1045II 10x4.5",
+  "manufacturer": "T-Motor",
+  "provenance": {
+    "source_url": "https://cdn.robotshop.com/media/T/Tmo/RB-Tmo-266/pdf/ligpower_airgear_450ii_combo_set_multi_rotor_uav_p_datasheet.pdf",
+    "retrieved": "2026-08-31",
+    "confidence": "datasheet",
+    "notes": "T1045II-Specifications block. Equivalent to the 1045 propellers shipped in the Holybro X500 V2 kit."
+  },
+  "diameter_in": 10.0,
+  "pitch_in": 4.5,
+  "blades": 2,
+  "weight_g": 12.5,
+  "material": "Nylon + glass fibre",
+  "thrust_limit_g": 1200.0,
+  "max_rpm": null,
+  "optimum_rpm_min": 6000.0,
+  "optimum_rpm_max": 7000.0,
+  "propeller_type": "Polymer propeller",
+  "surface_treatment": "Matte",
+  "dimensions_mm": "260 x 30",
+  "working_temp_c_min": -10.0,
+  "working_temp_c_max": 40.0,
+  "ct": null,
+  "cp": null
+}

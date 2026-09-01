@@ -1,0 +1,24 @@
+{
+  "id": "blheli-s-20a",
+  "name": "BLHeli_S 20A",
+  "manufacturer": "Holybro / T-Motor",
+  "provenance": {
+    "source_url": "https://cdn.robotshop.com/media/T/Tmo/RB-Tmo-266/pdf/ligpower_airgear_450ii_combo_set_multi_rotor_uav_p_datasheet.pdf",
+    "retrieved": "2026-08-31",
+    "confidence": "datasheet",
+    "notes": "BLHeli S 20A-Specifications block. No BEC. The 96% conversion efficiency is a class-typical BLHeli_S figure, not a published one."
+  },
+  "cont_current_a": 20.0,
+  "burst_current_a": 30.0,
+  "burst_duration_s": 10.0,
+  "weight_g": 21.0,
+  "max_cells_s": 4,
+  "resistance_mohm": null,
+  "efficiency": 0.96,
+  "bec_current_a": null,
+  "firmware": "BLHeli_S",
+  "dimensions_mm": "26 x 14 x 5",
+  "connector": "2.0 mm bullet",
+  "signal_hz_min": 50.0,
+  "signal_hz_max": 600.0
+}

@@ -1,0 +1,15 @@
+{
+  "id": "x500-v2",
+  "name": "Holybro X500 V2",
+  "manufacturer": "Holybro",
+  "provenance": {
+    "source_url": "https://holybro.com/products/x500-v2-kits",
+    "retrieved": "2026-08-31",
+    "confidence": "vendor",
+    "notes": "610 g is the bare airframe: 2 mm carbon plates, 16 mm tube arms and landing gear. Motors, ESCs, propellers, PDB and avionics are counted separately."
+  },
+  "wheelbase_mm": 500.0,
+  "weight_g": 610.0,
+  "arms": 4,
+  "max_prop_in": 11.0
+}

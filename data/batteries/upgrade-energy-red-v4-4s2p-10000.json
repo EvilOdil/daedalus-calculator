@@ -1,0 +1,29 @@
+{
+  "id": "upgrade-energy-red-v4-4s2p-10000",
+  "name": "Upgrade Energy RED V4 4S2P 10000mAh Amprius Li-ion",
+  "manufacturer": "Upgrade Energy",
+  "provenance": {
+    "source_url": "https://www.getfpv.com/upgrade-energy-red-v4-4s2p-10000mah-amprius-li-ion-battery-xt60.html",
+    "retrieved": "2026-08-31",
+    "confidence": "vendor",
+    "notes": "4S2P, 10 Ah at the pack terminals, 144 Wh, 254 Wh/kg, 567 g. Min 10.2 V (2.55 V/cell), max 16.8 V (4.2 V/cell), charge 10 A. Continuous rating is quoted as 650 W sustained, which is 45 A at the 14.4 V nominal - that is where the 4.5C figure comes from; burst is 100 A (10C). INTERNAL RESISTANCE IS ESTIMATED at 12 mOhm/cell - not published. Measure it if you can, it drives sag and the end of the discharge. Silicon-anode Li-ion, so the model uses a lithium-ion open-circuit curve, not a LiPo one."
+  },
+  "chemistry": "li-ion",
+  "cells_s": 4,
+  "cells_p": 2,
+  "capacity_mah": 10000.0,
+  "c_rating_cont": 4.5,
+  "c_rating_burst": 10.0,
+  "weight_g": 567.0,
+  "internal_resistance_mohm_per_cell": 12.0,
+  "v_nominal_per_cell": 3.6,
+  "v_max_per_cell": 4.2,
+  "v_cutoff_per_cell": 2.55,
+  "charge_current_a": 10.0,
+  "discharge_connector": "XT60",
+  "balance_connector": "JST-XHP-5",
+  "dimensions_mm": "145 x 43 x 43",
+  "cell_model": "Amprius SA124 SiCore 5 Ah",
+  "max_power_w": 650.0,
+  "ocv_curve": null
+}

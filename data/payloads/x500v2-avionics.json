@@ -1,0 +1,49 @@
+{
+  "id": "x500v2-avionics",
+  "name": "Scouts V2 ",
+  "manufacturer": "Holybro",
+  "provenance": {
+    "source_url": "https://holybro.com/products/px4-development-kit-x500-v2",
+    "retrieved": "2026-08-31",
+    "confidence": "vendor",
+    "notes": "Flight-critical electronics from the X500 V2 development kit. Masses are vendor figures. POWER FIGURES ARE ESTIMATES - measure yours with a clamp meter, they come straight off the flight pack. Add your sensors, compute and printed parts as further items."
+  },
+  "items": [
+    {
+      "name": "Pixhawk 6C flight controller",
+      "mass_g": 1100.0,
+      "power_w": 40.0,
+      "voltage_v": null,
+      "provenance": {
+        "source_url": null,
+        "retrieved": null,
+        "confidence": "estimated",
+        "notes": "Mass vendor; ~2 W typical for the FC alone."
+      }
+    },
+    {
+      "name": "M9N GPS + compass",
+      "mass_g": 82.0,
+      "power_w": 0.0,
+      "voltage_v": null,
+      "provenance": {
+        "source_url": null,
+        "retrieved": null,
+        "confidence": "estimated",
+        "notes": null
+      }
+    },
+    {
+      "name": "Telemetry radio (915 MHz)",
+      "mass_g": 20.0,
+      "power_w": 0.0,
+      "voltage_v": null,
+      "provenance": {
+        "source_url": null,
+        "retrieved": null,
+        "confidence": "estimated",
+        "notes": "Duty-cycle averaged; peaks higher on transmit."
+      }
+    }
+  ]
+}

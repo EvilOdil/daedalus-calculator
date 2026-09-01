@@ -1,0 +1,288 @@
+{
+  "id": "holybro-2216-920kv",
+  "name": "Holybro 2216 920KV",
+  "manufacturer": "Holybro",
+  "provenance": {
+    "source_url": "https://holybro.com/products/x500-v2-kits",
+    "retrieved": "2026-08-31",
+    "confidence": "datasheet",
+    "notes": "CLASS-EQUIVALENT SUBSTITUTION. Holybro publish only KV, size and weight for their 2216 920KV. Electrical parameters, dimensions and the thrust table come from the T-Motor AIR2216II KV920 datasheet: same 22x16 stator, same KV, same 4S rating, same 1045 propeller, and the part T-Motor sells into this kit class. Numbers are representative of the class, not measured on your motors. Rated voltage 4S (4.2 V/cell) / 16 V; internal resistance 115 +/- 10 mOhm; weight 64 +/- 2 g."
+  },
+  "kv_rpm_per_v": 920.0,
+  "weight_g": 64.0,
+  "stator_diameter_mm": 22.0,
+  "stator_height_mm": 16.0,
+  "io_a": 0.8,
+  "io_test_v": 10.0,
+  "rm_ohm": 0.115,
+  "rm_convention": "phase_to_phase",
+  "max_current_a": 17.0,
+  "max_current_duration_s": 180.0,
+  "max_power_w": 272.0,
+  "max_cells_s": 4,
+  "shaft_mm": 3.0,
+  "length_mm": 42.5,
+  "diameter_mm": 27.7,
+  "mount_pattern": "4-M3, 16/19 mm",
+  "wire_length_mm": 150.0,
+  "thrust_tables": [
+    {
+      "prop_id": "t1045ii",
+      "test_voltage_v": 15.62,
+      "esc_id": "blheli-s-20a",
+      "label": "Flight Stand 2026-09-01",
+      "rows": [
+        {
+          "throttle_pct": 20.0,
+          "thrust_g": 52.8,
+          "rpm": 2381.0,
+          "current_a": 0.2344,
+          "power_w": 3.83,
+          "torque_nm": 0.0088,
+          "efficiency_g_per_w": 13.785900783289817,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 30.0,
+          "thrust_g": 134.2,
+          "rpm": 3692.0,
+          "current_a": 0.7569,
+          "power_w": 12.35,
+          "torque_nm": 0.0223,
+          "efficiency_g_per_w": 10.866396761133602,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 50.0,
+          "thrust_g": 366.7,
+          "rpm": 5980.0,
+          "current_a": 3.042,
+          "power_w": 49.37,
+          "torque_nm": 0.0575,
+          "efficiency_g_per_w": 7.42758760380798,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 60.0,
+          "thrust_g": 509.4,
+          "rpm": 7049.0,
+          "current_a": 4.849,
+          "power_w": 78.29,
+          "torque_nm": 0.0785,
+          "efficiency_g_per_w": 6.506578107037935,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 70.0,
+          "thrust_g": 677.4,
+          "rpm": 8136.0,
+          "current_a": 7.29,
+          "power_w": 116.9,
+          "torque_nm": 0.1023,
+          "efficiency_g_per_w": 5.794696321642429,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 80.0,
+          "thrust_g": 872.4,
+          "rpm": 9215.0,
+          "current_a": 10.34,
+          "power_w": 164.4,
+          "torque_nm": 0.1296,
+          "efficiency_g_per_w": 5.306569343065693,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 90.0,
+          "thrust_g": 1068.0,
+          "rpm": 10255.0,
+          "current_a": 13.91,
+          "power_w": 218.8,
+          "torque_nm": 0.1552,
+          "efficiency_g_per_w": 4.881170018281535,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 100.0,
+          "thrust_g": 1120.0,
+          "rpm": 10637.0,
+          "current_a": 15.22,
+          "power_w": 237.8,
+          "torque_nm": 0.1607,
+          "efficiency_g_per_w": 4.7098402018502945,
+          "temperature_c": null
+        }
+      ],
+      "provenance": {
+        "source_url": null,
+        "retrieved": "2026-09-01",
+        "confidence": "measured",
+        "notes": "Thrust-stand run on the actual motor, 8 usable points from 1200 to 2000 us. Bus voltage sags 16.35 -> 15.62 V across the sweep; test_voltage_v records 15.62 V, the voltage at the top row, because that is the condition the max-thrust ceiling is scaled from. Per-row power is used directly by the fitter, so the sag does not distort it. UNRESOLVED: thrust-vs-rpm sits 25% below the T-Motor datasheet, but scaling rpm by 12/14 brings it onto the datasheet curve within 1.5% while leaving power 17% worse - the signature of a 12-pole stand setting on a 14-pole (12N14P) motor. If the pole count was wrong, every rpm here is 16.7% high and Ct/Cq are 27% low. Confirm before trusting Ct."
+      }
+    },
+    {
+      "prop_id": "t1045ii",
+      "test_voltage_v": 16.0,
+      "esc_id": "blheli-s-20a",
+      "label": "T-Motor AIR2216II datasheet",
+      "rows": [
+        {
+          "throttle_pct": 30.0,
+          "thrust_g": 210.0,
+          "rpm": 4042.0,
+          "current_a": 1.44,
+          "power_w": 23.0,
+          "torque_nm": 0.03,
+          "efficiency_g_per_w": 9.12,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 35.0,
+          "thrust_g": 259.0,
+          "rpm": 4469.0,
+          "current_a": 1.87,
+          "power_w": 30.0,
+          "torque_nm": 0.04,
+          "efficiency_g_per_w": 8.67,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 40.0,
+          "thrust_g": 309.0,
+          "rpm": 4855.0,
+          "current_a": 2.29,
+          "power_w": 37.0,
+          "torque_nm": 0.05,
+          "efficiency_g_per_w": 8.45,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 45.0,
+          "thrust_g": 373.0,
+          "rpm": 5301.0,
+          "current_a": 2.86,
+          "power_w": 46.0,
+          "torque_nm": 0.05,
+          "efficiency_g_per_w": 8.15,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 50.0,
+          "thrust_g": 447.0,
+          "rpm": 5780.0,
+          "current_a": 3.6,
+          "power_w": 58.0,
+          "torque_nm": 0.06,
+          "efficiency_g_per_w": 7.76,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 55.0,
+          "thrust_g": 536.0,
+          "rpm": 6298.0,
+          "current_a": 4.53,
+          "power_w": 72.0,
+          "torque_nm": 0.08,
+          "efficiency_g_per_w": 7.39,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 60.0,
+          "thrust_g": 628.0,
+          "rpm": 6800.0,
+          "current_a": 5.61,
+          "power_w": 90.0,
+          "torque_nm": 0.09,
+          "efficiency_g_per_w": 7.01,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 65.0,
+          "thrust_g": 729.0,
+          "rpm": 7281.0,
+          "current_a": 6.78,
+          "power_w": 108.0,
+          "torque_nm": 0.1,
+          "efficiency_g_per_w": 6.73,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 70.0,
+          "thrust_g": 814.0,
+          "rpm": 7679.0,
+          "current_a": 7.92,
+          "power_w": 126.0,
+          "torque_nm": 0.11,
+          "efficiency_g_per_w": 6.44,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 75.0,
+          "thrust_g": 906.0,
+          "rpm": 8096.0,
+          "current_a": 9.2,
+          "power_w": 147.0,
+          "torque_nm": 0.12,
+          "efficiency_g_per_w": 6.18,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 80.0,
+          "thrust_g": 993.0,
+          "rpm": 8468.0,
+          "current_a": 10.59,
+          "power_w": 169.0,
+          "torque_nm": 0.14,
+          "efficiency_g_per_w": 5.88,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 85.0,
+          "thrust_g": 1087.0,
+          "rpm": 8867.0,
+          "current_a": 12.11,
+          "power_w": 193.0,
+          "torque_nm": 0.15,
+          "efficiency_g_per_w": 5.65,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 90.0,
+          "thrust_g": 1191.0,
+          "rpm": 9257.0,
+          "current_a": 13.81,
+          "power_w": 219.0,
+          "torque_nm": 0.16,
+          "efficiency_g_per_w": 5.43,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 95.0,
+          "thrust_g": 1289.0,
+          "rpm": 9675.0,
+          "current_a": 15.68,
+          "power_w": 249.0,
+          "torque_nm": 0.18,
+          "efficiency_g_per_w": 5.18,
+          "temperature_c": null
+        },
+        {
+          "throttle_pct": 100.0,
+          "thrust_g": 1332.0,
+          "rpm": 9857.0,
+          "current_a": 16.37,
+          "power_w": 260.0,
+          "torque_nm": 0.18,
+          "efficiency_g_per_w": 5.13,
+          "temperature_c": null
+        }
+      ],
+      "provenance": {
+        "source_url": "https://cdn.robotshop.com/media/T/Tmo/RB-Tmo-266/pdf/ligpower_airgear_450ii_combo_set_multi_rotor_uav_p_datasheet.pdf",
+        "retrieved": "2026-08-31",
+        "confidence": "datasheet",
+        "notes": "AIR2216II-KV920 + T1045II at 16 V (4S fully charged), 15 points from 30% to 100% throttle. Motor surface temperature 80 C at 100% throttle after 10 min. Current and power are battery-side. Torque is published to two decimals only, so it is used as a cross-check rather than a fitting input."
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Real secrets never go in the repo; .streamlit/secrets.toml.example is the template.
+.streamlit/secrets.toml
