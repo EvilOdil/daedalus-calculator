@@ -1,0 +1,29 @@
+{
+  "id": "UE_Red-4s1p",
+  "name": "UE Red Series 4S 1P 5 Ah",
+  "manufacturer": "UE",
+  "provenance": {
+    "source_url": "https://www.upgradeenergytech.com/products/red-v4-4s1p-5ah-drone-battery?variant=53379397255533",
+    "retrieved": "2026-09-01",
+    "confidence": "datasheet",
+    "notes": null
+  },
+  "chemistry": "lipo",
+  "cells_s": 4,
+  "cells_p": 1,
+  "capacity_mah": 5000.0,
+  "c_rating_cont": 2.5,
+  "c_rating_burst": null,
+  "weight_g": 288.0,
+  "internal_resistance_mohm_per_cell": null,
+  "v_nominal_per_cell": 3.6,
+  "v_max_per_cell": 4.2,
+  "v_cutoff_per_cell": 3.5,
+  "charge_current_a": null,
+  "discharge_connector": null,
+  "balance_connector": null,
+  "dimensions_mm": null,
+  "cell_model": null,
+  "max_power_w": null,
+  "ocv_curve": null
+}

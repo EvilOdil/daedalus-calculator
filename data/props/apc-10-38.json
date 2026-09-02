@@ -1,0 +1,27 @@
+{
+  "id": "apc-10-38",
+  "name": "APC ELECTRIC PROPELLER 10x3.8SF",
+  "manufacturer": "APC",
+  "provenance": {
+    "source_url": "https://www.indiamart.com/proddetail/apc-electric-propeller-10x3-8sf-2857991435397.html",
+    "retrieved": "2026-09-01",
+    "confidence": "datasheet",
+    "notes": null
+  },
+  "diameter_in": 10.0,
+  "pitch_in": 3.8,
+  "blades": 2,
+  "weight_g": 11.4,
+  "material": null,
+  "thrust_limit_g": null,
+  "max_rpm": null,
+  "optimum_rpm_min": null,
+  "optimum_rpm_max": null,
+  "propeller_type": null,
+  "surface_treatment": null,
+  "dimensions_mm": null,
+  "working_temp_c_min": null,
+  "working_temp_c_max": null,
+  "ct": null,
+  "cp": null
+}
