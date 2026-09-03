@@ -18,7 +18,7 @@ comment on table public.profiles is
 -- invisible profile, so reject it at the database instead.
 alter table public.profiles drop constraint if exists profiles_kind_check;
 alter table public.profiles add constraint profiles_kind_check
-    check (kind in ('motors', 'props', 'escs', 'batteries', 'frames', 'payloads', 'setups'));
+    check (kind in ('motors', 'props', 'escs', 'batteries', 'frames', 'payloads', 'setups', 'missions'));
 
 create index if not exists profiles_kind_idx on public.profiles (kind);
 
