@@ -49,34 +49,46 @@
   // https://docs.streamlit.io/develop/concepts/custom-components/create
   const Streamlit = {
     _ready: false,
+
+    // EVERY message must carry `isStreamlitMessage: true`. Streamlit's
+    // ComponentRegistry.onMessageEvent drops anything without that property
+    // as its very first check - before the branch that logs "Received
+    // component message for unregistered ComponentInstance!" - so a message
+    // missing it is discarded in complete silence: no console warning, no
+    // error, nothing to debug against. The symptom is the component
+    // rendering as an empty box forever, because Streamlit styles the
+    // <iframe> `display: componentReady ? "initial" : "none"` and never
+    // learns it is ready.
+    post: function (message) {
+      window.parent.postMessage(Object.assign({ isStreamlitMessage: true }, message), "*");
+    },
+
     init: function () {
-      // Streamlit keeps the parent <iframe> at `display:none` until it has
-      // processed our `componentReady` message, and only lays this document
-      // out for real once that happens - confirmed empirically (a
-      // ResizeObserver on <body>, started right here, never re-fires once
-      // the parent later flips display:none -> initial, because no layout
-      // runs inside a hidden iframe for it to observe a resize *into*).
-      // `streamlit:render` is the message the parent sends once it *is*
-      // actively displaying this component, so that - not componentReady
-      // itself - is the right trigger to (re-)report a real height. It also
-      // fires on every later app rerun, which is what keeps the height
-      // correct as content changes, no manual setFrameHeight() call needed
-      // at each call site that changes the DOM.
+      // Two things drive the height, because they cover different events:
+      //
+      // - `streamlit:render`, sent by the parent once it is actually
+      //   displaying this component (and again on every app rerun). This is
+      //   the first moment a real measurement is possible at all: until the
+      //   parent flips the iframe from display:none, nothing in here has a
+      //   layout box and scrollHeight reads 0.
+      // - a ResizeObserver, for content that changes without any app rerun -
+      //   the status line, the progress bar, an error message. No render
+      //   message arrives for those, so nothing else would report them.
       window.addEventListener("message", (event) => {
         const data = event.data || {};
         if (data.type === "streamlit:render") {
           requestAnimationFrame(() => this.setFrameHeight());
         }
       });
-      window.parent.postMessage({ type: "streamlit:componentReady", apiVersion: 1 }, "*");
+      new ResizeObserver(() => this.setFrameHeight()).observe(document.body);
+      this.post({ type: "streamlit:componentReady", apiVersion: 1 });
       this._ready = true;
     },
     setFrameHeight: function () {
-      const height = document.documentElement.scrollHeight;
-      window.parent.postMessage({ type: "streamlit:setFrameHeight", height }, "*");
+      this.post({ type: "streamlit:setFrameHeight", height: document.documentElement.scrollHeight });
     },
     setComponentValue: function (value) {
-      window.parent.postMessage({ type: "streamlit:setComponentValue", value, dataType: "json" }, "*");
+      this.post({ type: "streamlit:setComponentValue", value, dataType: "json" });
     },
   };
 
