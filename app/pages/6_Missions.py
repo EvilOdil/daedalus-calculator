@@ -368,7 +368,10 @@ def _render_flight_panel(mission: Mission, idx: int, flight: MissionFlight) -> N
                     mission.location = f"{lat:.5f}, {lon:.5f}"
                 lib.save("missions", mission)
                 reload_library()
-                st.session_state.pop(tried_key, None)
+                # tried_key stays set to this filename - the uploader still holds
+                # the same file across the rerun below, and popping the guard here
+                # would let the next rerun see it as "new" again and re-attach it
+                # in a loop (this exact bug, fixed after shipping).
                 st.success(
                     "Log attached — date/time corrected."
                     if attach_summary.flown_at else "Log attached."
@@ -454,7 +457,8 @@ with browse:
                         mission.location = f"{lat:.5f}, {lon:.5f}"
                     lib.save("missions", mission)
                     reload_library()
-                    st.session_state.pop(tried_key, None)
+                    # tried_key stays set to this filename - see the matching
+                    # comment in _render_flight_panel's attach handler.
                     st.success("Flight added.")
                     st.rerun()
             elif uploaded is None:
