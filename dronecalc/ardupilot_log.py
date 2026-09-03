@@ -379,6 +379,7 @@ def parse_log(
     rangefinder_distance_m = _downsample_series(rows["rangefinder_rows"], _MAX_SENSOR_SERIES_POINTS)
     optical_flow_rate_x = _downsample_series(rows["flow_x_rows"], _MAX_SENSOR_SERIES_POINTS)
     optical_flow_rate_y = _downsample_series(rows["flow_y_rows"], _MAX_SENSOR_SERIES_POINTS)
+    throttle_pct = _downsample_series(rows["throttle_rows"], _MAX_SENSOR_SERIES_POINTS)
 
     return FlightLogSummary(
         source_filename=path.name,
@@ -405,6 +406,7 @@ def parse_log(
         rangefinder_distance_m=rangefinder_distance_m,
         optical_flow_rate_x=optical_flow_rate_x,
         optical_flow_rate_y=optical_flow_rate_y,
+        throttle_pct=throttle_pct,
         warnings=warnings,
     )
 
@@ -433,6 +435,7 @@ def _read_messages(mlog: Any) -> dict[str, Any]:
     rangefinder_rows: list[tuple[float, float]] = []
     flow_x_rows: list[tuple[float, float]] = []
     flow_y_rows: list[tuple[float, float]] = []
+    throttle_rows: list[tuple[float, float]] = []
 
     first_epoch: float | None = None
     last_epoch: float | None = None
@@ -443,7 +446,9 @@ def _read_messages(mlog: Any) -> dict[str, Any]:
     landing_latlon: tuple[float, float] | None = None
     gps_track: list[_GpsRow] = []
 
-    want_types = list(_BATTERY_TYPES) + ["MSG", "ERR", "STAT", "GPS", "CMD", "PL", "RFND", "OF"]
+    want_types = list(_BATTERY_TYPES) + [
+        "MSG", "ERR", "STAT", "GPS", "CMD", "PL", "RFND", "OF", "CTUN",
+    ]
 
     n_messages = 0
     while True:
@@ -564,6 +569,14 @@ def _read_messages(mlog: Any) -> dict[str, Any]:
             if flow_y is not None:
                 flow_y_rows.append((t_s, flow_y))
 
+        elif mtype == "CTUN":
+            # ThO is the mixer's commanded throttle output, 0-1 - the same
+            # "stick position" convention a manufacturer's thrust table uses,
+            # not a measurement of actual thrust or current.
+            tho = getattr(msg, "ThO", None)
+            if tho is not None:
+                throttle_rows.append((t_s, tho * 100.0))
+
     if truncated_events:
         warnings.append(f"more than {_MAX_EVENTS} MSG/ERR lines — only the first {_MAX_EVENTS} were kept")
     if truncated_mission_events:
@@ -581,6 +594,7 @@ def _read_messages(mlog: Any) -> dict[str, Any]:
         landing_target_samples=landing_target_samples,
         thrust_loss_events=thrust_loss_events, crash_events=crash_events,
         rangefinder_rows=rangefinder_rows, flow_x_rows=flow_x_rows, flow_y_rows=flow_y_rows,
+        throttle_rows=throttle_rows,
     )
 
 

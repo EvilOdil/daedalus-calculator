@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import bisect
 import datetime as _dt
 import os
 import tempfile
@@ -15,7 +16,10 @@ import streamlit as st
 
 from common import get_library, page_header, reload_library
 from dronecalc.ardupilot_log import LogParseError, parse_log
-from dronecalc.missions import FlightLogSummary, Mission, MissionFlight, generate_mission_id
+from dronecalc.missions import FlightLogSummary, Mission, MissionFlight, SeriesPoint, generate_mission_id
+from dronecalc.physics.atmosphere import grams_to_newtons
+from dronecalc.solver import PropulsionSystem
+from dronecalc.store import LibraryError
 
 st.set_page_config(page_title="Missions", page_icon="📋", layout="wide")
 page_header("Mission log", "Test flights per setup, with wind and ArduPilot log data.")
@@ -229,7 +233,75 @@ def _add_event_markers(fig: go.Figure, summary: FlightLogSummary) -> None:
             )
 
 
-def _render_log_summary(summary: FlightLogSummary, *, key: str) -> None:
+def _nearest_series_value(points: list[SeriesPoint], t_s: float) -> float | None:
+    """Value of the `SeriesPoint` in `points` (sorted by t_s) closest to `t_s`.
+
+    Used to pair the throttle series with the battery series — both are
+    independently downsampled from different ArduPilot message types (CTUN vs
+    BAT), so they don't share timestamps exactly.
+    """
+    if not points:
+        return None
+    ts = [p.t_s for p in points]
+    i = bisect.bisect_left(ts, t_s)
+    candidates = [j for j in (i - 1, i) if 0 <= j < len(points)]
+    best = min(candidates, key=lambda j: abs(points[j].t_s - t_s))
+    return points[best].value
+
+
+def _throttle_current_curve(mission: Mission, summary: FlightLogSummary):
+    """Actual vs. modeled pack current across the flight's throttle range.
+
+    Validates the motor+prop thrust table against real telemetry: at each
+    sampled instant, the actual throttle command (CTUN.ThO) is looked up in
+    the setup's own measured thrust table to predict thrust, which is then
+    solved through the motor/ESC model at that *same instant's actual pack
+    voltage* — so a mismatch here points at the prop/motor data, not battery
+    sag or a different reference voltage.
+
+    Returns `(actual_throttle, actual_current, modeled_throttle,
+    modeled_current)` — parallel lists, same order — or a short string
+    explaining why the comparison isn't available.
+    """
+    if not summary.throttle_pct or not summary.series:
+        return "no throttle data (CTUN.ThO) found in this log"
+    try:
+        resolved = lib.resolve(mission.setup_id)
+    except LibraryError as exc:
+        return f"could not resolve setup '{mission.setup_id}': {exc}"
+    system = PropulsionSystem(resolved)
+    if system.table is None:
+        return (
+            f"'{resolved.motor.name}' + '{resolved.prop.name}' has no measured thrust table "
+            "with a throttle column — this setup falls back to a parametric model, which has "
+            "no throttle curve to compare against"
+        )
+
+    actual_thr: list[float] = []
+    actual_i: list[float] = []
+    modeled_thr: list[float] = []
+    modeled_i: list[float] = []
+    for p in summary.series:
+        if p.voltage_v is None or p.current_a is None:
+            continue
+        thr = _nearest_series_value(summary.throttle_pct, p.t_s)
+        if thr is None:
+            continue
+        thrust_g = system.thrust_at_throttle_g(thr)
+        if thrust_g is None:
+            continue
+        rotor = system.rotor_at_thrust(grams_to_newtons(thrust_g), p.voltage_v)
+        actual_thr.append(thr)
+        actual_i.append(p.current_a)
+        modeled_thr.append(thr)
+        modeled_i.append(rotor.bus_current_a * system.n_rotors)
+
+    if not actual_thr:
+        return "no overlapping throttle/voltage/current samples to compare"
+    return actual_thr, actual_i, modeled_thr, modeled_i
+
+
+def _render_log_summary(mission: Mission, summary: FlightLogSummary, *, key: str) -> None:
     """Metrics, a Plotly voltage/current/power chart, and a timestamped event
     table — shared between the "add flight" preview and viewing a saved flight.
 
@@ -341,6 +413,33 @@ def _render_log_summary(summary: FlightLogSummary, *, key: str) -> None:
             )
             st.plotly_chart(fig, width="stretch", key=f"{key}::chart")
 
+    st.markdown("###### Actual vs. modeled current (throttle curve)")
+    comparison = _throttle_current_curve(mission, summary)
+    if isinstance(comparison, str):
+        st.caption(comparison)
+    else:
+        actual_thr, actual_i, modeled_thr, modeled_i = comparison
+        order = sorted(range(len(modeled_thr)), key=lambda k: modeled_thr[k])
+        fig2 = go.Figure()
+        fig2.add_trace(go.Scatter(
+            x=actual_thr, y=actual_i, mode="markers", name="Actual (flight)",
+            marker=dict(color="#cf222e", size=5, opacity=0.5),
+        ))
+        fig2.add_trace(go.Scatter(
+            x=[modeled_thr[k] for k in order], y=[modeled_i[k] for k in order],
+            mode="lines", name="Modeled (thrust table)", line=dict(color="#0969da", width=2),
+        ))
+        fig2.update_layout(
+            height=340, margin=dict(l=10, r=10, t=30, b=10),
+            xaxis=dict(title="Throttle (%)"), yaxis=dict(title="Pack current (A)"),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02),
+        )
+        st.plotly_chart(fig2, width="stretch", key=f"{key}::throttle_chart")
+        st.caption(
+            "Each modeled point is solved at that sample's own pack voltage — a gap here "
+            "points at the motor/prop thrust table, not battery sag."
+        )
+
     if summary.events:
         st.markdown("###### Log messages")
         events_df = pd.DataFrame([
@@ -425,7 +524,7 @@ def _render_flight_panel(mission: Mission, idx: int, flight: MissionFlight) -> N
             reload_library()
 
     if flight.log_summary is not None:
-        _render_log_summary(flight.log_summary, key=f"{key_prefix}::log")
+        _render_log_summary(mission, flight.log_summary, key=f"{key_prefix}::log")
     else:
         st.markdown("###### Attach an ArduPilot log")
         attach_uploaded = st.file_uploader(

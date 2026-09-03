@@ -195,6 +195,12 @@ class FlightLogSummary(BaseModel):
         default_factory=list,
         description="Raw optical flow rate, Y axis (OF.flowY), rad/s - see optical_flow_rate_x.",
     )
+    throttle_pct: list[SeriesPoint] = Field(
+        default_factory=list,
+        description="Commanded throttle output (CTUN.ThO * 100), percent - the duty-cycle "
+                    "command ArduPilot sent the motor mixer, i.e. stick position, not thrust. "
+                    "Empty if CTUN was not logged.",
+    )
     warnings: list[str] = Field(
         default_factory=list,
         description="Things this parse could not determine confidently, e.g. no ARM/DISARM "
