@@ -3,17 +3,28 @@
 <head>
 <meta charset="utf-8" />
 <style>
-  html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  #box {
-    border: 2px dashed #8b949e; border-radius: 8px; padding: 14px 16px;
-    display: flex; align-items: center; gap: 12px; font-size: 14px; color: #24292f;
+  /* Streamlit component iframes have a transparent body by default - with no
+     explicit background here, this page inherited the dark app's background
+     showing through while text stayed near-black, i.e. invisible. This app's
+     theme is fixed to dark (.streamlit/config.toml `base = "dark"`), so this
+     is styled to match that directly rather than adding light/dark media
+     queries for a mode the app itself never uses. */
+  html, body {
+    margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0e1117; color: #fafafa; color-scheme: dark;
   }
-  #box.dragover { border-color: #0969da; background: #ddf4ff; }
+  #box {
+    border: 2px dashed #4a4f58; border-radius: 8px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px; font-size: 14px; color: #fafafa;
+    background: #1a1c24;
+  }
+  #box.dragover { border-color: #0969da; background: #16232f; }
   #status { flex: 1; }
-  #bar { width: 100%; height: 6px; background: #eaeef2; border-radius: 3px; overflow: hidden; margin-top: 6px; display: none; }
+  #status code { background: #262730; padding: 1px 4px; border-radius: 3px; }
+  #bar { width: 100%; height: 6px; background: #262730; border-radius: 3px; overflow: hidden; margin-top: 6px; display: none; }
   #bar-fill { height: 100%; width: 0%; background: #0969da; transition: width 0.1s linear; }
-  #err { color: #cf222e; margin-top: 6px; display: none; }
-  input[type=file] { font-size: 13px; }
+  #err { color: #ff6b6b; margin-top: 6px; display: none; }
+  input[type=file] { font-size: 13px; color: #fafafa; }
 </style>
 </head>
 <body>
@@ -39,16 +50,26 @@
   const Streamlit = {
     _ready: false,
     init: function () {
+      // Streamlit keeps the parent <iframe> at `display:none` until it has
+      // processed our `componentReady` message, and only lays this document
+      // out for real once that happens - confirmed empirically (a
+      // ResizeObserver on <body>, started right here, never re-fires once
+      // the parent later flips display:none -> initial, because no layout
+      // runs inside a hidden iframe for it to observe a resize *into*).
+      // `streamlit:render` is the message the parent sends once it *is*
+      // actively displaying this component, so that - not componentReady
+      // itself - is the right trigger to (re-)report a real height. It also
+      // fires on every later app rerun, which is what keeps the height
+      // correct as content changes, no manual setFrameHeight() call needed
+      // at each call site that changes the DOM.
       window.addEventListener("message", (event) => {
         const data = event.data || {};
         if (data.type === "streamlit:render") {
-          // No args this component reads today - render is a no-op beyond
-          // the initial DOM, which is already up.
+          requestAnimationFrame(() => this.setFrameHeight());
         }
       });
       window.parent.postMessage({ type: "streamlit:componentReady", apiVersion: 1 }, "*");
       this._ready = true;
-      this.setFrameHeight();
     },
     setFrameHeight: function () {
       const height = document.documentElement.scrollHeight;
@@ -67,14 +88,14 @@
   const errEl = document.getElementById("err");
 
   function setStatus(text) {
+    // No explicit setFrameHeight() call needed - the ResizeObserver set up in
+    // Streamlit.init() picks up any size change this causes automatically.
     statusEl.textContent = text;
-    Streamlit.setFrameHeight();
   }
 
   function setError(text) {
     errEl.textContent = text;
     errEl.style.display = text ? "block" : "none";
-    Streamlit.setFrameHeight();
   }
 
   function setProgress(pct) {
