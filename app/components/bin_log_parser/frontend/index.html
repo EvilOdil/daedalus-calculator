@@ -30,7 +30,7 @@
 <body>
   <div id="box">
     <div id="status">
-      <div>Drop a <code>.bin</code>/<code>.log</code> here — parsed on this device, never uploaded.</div>
+      <div>Drop a <code>.bin</code>/<code>.log</code> here.</div>
       <input type="file" id="file-input" accept=".bin,.log" />
       <div id="bar"><div id="bar-fill"></div></div>
       <div id="err"></div>
@@ -92,6 +92,11 @@
     },
   };
 
+  //: What the status line reverts to after a file is cleared or fails. Kept
+  //: in step with the same text spelled out in the markup above, which is
+  //: what shows before any file has been picked.
+  const IDLE_TEXT = "Drop a .bin/.log here.";
+
   const box = document.getElementById("box");
   const statusEl = document.getElementById("status").firstElementChild;
   const fileInput = document.getElementById("file-input");
@@ -124,7 +129,7 @@
     const reader = new FileReader();
     reader.onerror = () => {
       setError(`Could not read '${file.name}' from disk.`);
-      setStatus("Drop a .bin/.log here — parsed on this device, never uploaded.");
+      setStatus(IDLE_TEXT);
     };
     reader.onload = () => {
       setStatus(`Parsing ${file.name}…`);
@@ -144,7 +149,7 @@
           Streamlit.setComponentValue({ ok: true, summary });
         } catch (e) {
           setError(`Could not read '${file.name}' as an ArduPilot log: ${e.message}`);
-          setStatus("Drop a .bin/.log here — parsed on this device, never uploaded.");
+          setStatus(IDLE_TEXT);
           bar.style.display = "none";
           Streamlit.setComponentValue({ ok: false, filename: file.name, error: String(e.message || e) });
         }
