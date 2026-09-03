@@ -1,10 +1,18 @@
 [theme]
 base = "dark"
+# Streamlit's dark-theme default primaryColor is a red/orange - it made every
+# "primary" button (Save, Create, Add) look like a warning, while destructive
+# actions (Delete) used the neutral default and looked calmer than they should.
+# This blue matches the accent already used for "datasheet"-confidence badges
+# and plot lines elsewhere in the app (see common.py CONFIDENCE_STYLE).
+primaryColor = "#0969da"
 
 [browser]
 gatherUsageStats = false
 
 [server]
-# Uploaded files are not part of any workflow yet; keep the limit small so a
-# stray large upload cannot exhaust the container's memory.
-maxUploadSize = 5
+# ArduPilot dataflash logs (.bin) run 50-150+ MB for a normal flight; the log
+# itself is parsed into a small summary and discarded (see Missions page /
+# dronecalc/ardupilot_log.py), so a generous ceiling here costs nothing but
+# upload time. 300 MB covers a long/verbose flight with headroom.
+maxUploadSize = 300

@@ -19,6 +19,7 @@ from typing import Any, Iterable
 from pydantic import BaseModel
 
 from .backends import DEFAULT_DATA_DIR, FileBackend, StorageBackend, default_backend
+from .missions import Mission
 from .models import Battery, ESC, Frame, Motor, Payload, Propeller, ResolvedSetup, Setup
 
 #: Directory name -> model class.
@@ -30,6 +31,7 @@ KINDS: dict[str, type[BaseModel]] = {
     "frames": Frame,
     "payloads": Payload,
     "setups": Setup,
+    "missions": Mission,
 }
 
 
@@ -54,6 +56,7 @@ class Library:
     frames: dict[str, Frame] = field(default_factory=dict)
     payloads: dict[str, Payload] = field(default_factory=dict)
     setups: dict[str, Setup] = field(default_factory=dict)
+    missions: dict[str, Mission] = field(default_factory=dict)
 
     @property
     def data_dir(self) -> Path:
@@ -218,3 +221,9 @@ class Library:
 
     def all_setups(self) -> Iterable[Setup]:
         return [self.setups[k] for k in sorted(self.setups)]
+
+    def all_missions(self) -> Iterable[Mission]:
+        return [self.missions[k] for k in sorted(self.missions)]
+
+    def missions_for_setup(self, setup_id: str) -> list[Mission]:
+        return [m for m in self.all_missions() if m.setup_id == setup_id]
