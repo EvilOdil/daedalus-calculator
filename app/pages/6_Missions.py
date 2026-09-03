@@ -307,12 +307,18 @@ def _throttle_current_curve(mission: Mission, summary: FlightLogSummary):
     return actual_thr, actual_i, modeled_thr, modeled_i
 
 
-def _render_browser_parse(key_prefix: str, on_success) -> None:
+def _render_browser_parse(key_prefix: str, on_success, *, success_message) -> None:
     """Renders the in-browser log-parsing widget (see `components/bin_log_parser`)
     and, on a new result, validates it into a `FlightLogSummary` and calls
     `on_success` - the same callback shape `_start_upload_job` uses, but
     invoked synchronously: parsing already happened in the browser before
     Python ever sees a result here, so there is no background job/poll step.
+
+    `success_message` takes the parsed `FlightLogSummary` and returns the
+    text to show on success - callers word this to match what `on_success`
+    actually does (append a flight vs. attach to one already there), the
+    same way the two `st.file_uploader` call sites this mirrors each have
+    their own message.
 
     The component returns its LAST result on every rerun (Streamlit
     components are stateful that way), so `parsed_at` (fresh on every parse)
@@ -339,7 +345,7 @@ def _render_browser_parse(key_prefix: str, on_success) -> None:
         st.error(f"Browser-parsed log didn't match the expected format: {exc}")
         return
     on_success(summary)
-    st.success(f"Parsed {summary.source_filename} on your device — flight added.")
+    st.success(success_message(summary))
     reload_library()
 
 
@@ -569,35 +575,48 @@ def _render_flight_panel(mission: Mission, idx: int, flight: MissionFlight) -> N
         _render_log_summary(mission, flight.log_summary, key=f"{key_prefix}::log")
     else:
         st.markdown("###### Attach an ArduPilot log")
-        attach_uploaded = st.file_uploader(
-            "ArduPilot log", type=["bin", "log"],
-            key=f"{key_prefix}::attach_upload", label_visibility="collapsed",
+
+        def _on_attach_parsed(summary: FlightLogSummary) -> None:
+            flight.log_summary = summary
+            # The log's own clock is authoritative - it overrides whatever
+            # was typed in by hand, since a manually entered date/time can
+            # be wrong in a way the log itself cannot.
+            if summary.flown_at:
+                flight.date = summary.flown_at
+            if not mission.location and summary.takeoff_latlon:
+                lat, lon = summary.takeoff_latlon
+                mission.location = f"{lat:.5f}, {lon:.5f}"
+            lib.save("missions", mission)
+
+        attach_mode = st.radio(
+            "How to attach the log", ["Parse in browser (fast)", "Upload to server"],
+            horizontal=True, label_visibility="collapsed", key=f"{key_prefix}::attach_mode",
         )
-        # A name-keyed guard, not a confirm button: a new file starts a
-        # background parse job (see _UploadJob) the moment it finishes
-        # uploading. The guard stays set for as long as the uploader keeps
-        # holding this same file - including after the job completes - so it
-        # is never re-started; only the uploader going empty clears it.
-        tried_key = f"{key_prefix}::attach_tried"
-        if attach_uploaded is not None and st.session_state.get(tried_key) != attach_uploaded.name:
-            st.session_state[tried_key] = attach_uploaded.name
-
-            def _on_success(summary: FlightLogSummary) -> None:
-                flight.log_summary = summary
-                # The log's own clock is authoritative - it overrides whatever
-                # was typed in by hand, since a manually entered date/time can
-                # be wrong in a way the log itself cannot.
-                if summary.flown_at:
-                    flight.date = summary.flown_at
-                if not mission.location and summary.takeoff_latlon:
-                    lat, lon = summary.takeoff_latlon
-                    mission.location = f"{lat:.5f}, {lon:.5f}"
-                lib.save("missions", mission)
-
-            _start_upload_job(attach_uploaded, attach_job_key, _on_success)
-            st.rerun()
-        elif attach_uploaded is None:
-            st.session_state.pop(tried_key, None)
+        if attach_mode == "Parse in browser (fast)":
+            _render_browser_parse(
+                f"{key_prefix}::attach", _on_attach_parsed,
+                success_message=lambda summary: (
+                    "Parsed on your device — log attached, date/time corrected."
+                    if summary.flown_at else "Parsed on your device — log attached."
+                ),
+            )
+        else:
+            attach_uploaded = st.file_uploader(
+                "ArduPilot log", type=["bin", "log"],
+                key=f"{key_prefix}::attach_upload", label_visibility="collapsed",
+            )
+            # A name-keyed guard, not a confirm button: a new file starts a
+            # background parse job (see _UploadJob) the moment it finishes
+            # uploading. The guard stays set for as long as the uploader keeps
+            # holding this same file - including after the job completes - so it
+            # is never re-started; only the uploader going empty clears it.
+            tried_key = f"{key_prefix}::attach_tried"
+            if attach_uploaded is not None and st.session_state.get(tried_key) != attach_uploaded.name:
+                st.session_state[tried_key] = attach_uploaded.name
+                _start_upload_job(attach_uploaded, attach_job_key, _on_attach_parsed)
+                st.rerun()
+            elif attach_uploaded is None:
+                st.session_state.pop(tried_key, None)
 
 
 def _clear_flight_dialog_selection() -> None:
@@ -667,7 +686,10 @@ with browse:
                 horizontal=True, label_visibility="collapsed", key=f"add_mode::{mission.id}",
             )
             if add_mode == "Parse in browser (fast)":
-                _render_browser_parse(f"add::{mission.id}", _on_flight_parsed)
+                _render_browser_parse(
+                    f"add::{mission.id}", _on_flight_parsed,
+                    success_message=lambda summary: f"Parsed {summary.source_filename} on your device — flight added.",
+                )
             else:
                 # Polled unconditionally, before the uploader below: see the
                 # matching comment on the attach job in _render_flight_panel.
