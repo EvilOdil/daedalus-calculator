@@ -23,7 +23,7 @@ import datetime as _dt
 import math
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from .missions import (
     BatteryLogSummary, FlightLogSummary, LogEvent, LogPoint, MissionCmdEvent, RateSample,
@@ -307,8 +307,23 @@ def _compute_distances(
     return total, nav, nav_duration, []
 
 
-def parse_log(path: str | Path, *, max_series_points: int = 500) -> FlightLogSummary:
-    """Parse an ArduPilot `.bin`/`.log` dataflash log into a `FlightLogSummary`."""
+def parse_log(
+    path: str | Path,
+    *,
+    max_series_points: int = 500,
+    progress_callback: Callable[[int], None] | None = None,
+) -> FlightLogSummary:
+    """Parse an ArduPilot `.bin`/`.log` dataflash log into a `FlightLogSummary`.
+
+    `progress_callback`, if given, is called with 0-100 while pymavlink builds
+    its byte-offset index of the file (opening the connection below) - the
+    dominant cost for a large log, since the actual message extraction that
+    follows only visits the offsets for the types this module wants. It is
+    called synchronously, from whatever thread calls `parse_log` - callers
+    driving a UI progress bar from a background thread are expected to have
+    the callback just record the value for a separate thread to read, not
+    touch UI state directly.
+    """
     try:
         from pymavlink import mavutil
     except ImportError as exc:  # pragma: no cover - depends on install extras
@@ -322,7 +337,7 @@ def parse_log(path: str | Path, *, max_series_points: int = 500) -> FlightLogSum
     # happen mid-stream on a corrupt frame.
     with _suppress_native_stderr():
         try:
-            mlog = mavutil.mavlink_connection(str(path))
+            mlog = mavutil.mavlink_connection(str(path), progress_callback=progress_callback)
         except Exception as exc:  # noqa: BLE001 - any parse failure becomes a LogParseError
             raise LogParseError(f"could not open '{path.name}' as an ArduPilot log: {exc}") from exc
         rows = _read_messages(mlog)
