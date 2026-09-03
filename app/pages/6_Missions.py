@@ -263,7 +263,12 @@ def _throttle_current_curve(mission: Mission, summary: FlightLogSummary):
     modeled_current)` — parallel lists, same order — or a short string
     explaining why the comparison isn't available.
     """
-    if not summary.throttle_pct or not summary.series:
+    # getattr, not `summary.throttle_pct` - `summary` can be a `FlightLogSummary`
+    # deserialised (or cache_resource-held) under an older code version that
+    # predates this field, and a stale-cache moment right after a deploy
+    # should degrade to "not available" rather than crash the whole panel.
+    throttle_series = getattr(summary, "throttle_pct", None) or []
+    if not throttle_series or not summary.series:
         return "no throttle data (CTUN.ThO) found in this log"
     try:
         resolved = lib.resolve(mission.setup_id)
@@ -284,7 +289,7 @@ def _throttle_current_curve(mission: Mission, summary: FlightLogSummary):
     for p in summary.series:
         if p.voltage_v is None or p.current_a is None:
             continue
-        thr = _nearest_series_value(summary.throttle_pct, p.t_s)
+        thr = _nearest_series_value(throttle_series, p.t_s)
         if thr is None:
             continue
         thrust_g = system.thrust_at_throttle_g(thr)
