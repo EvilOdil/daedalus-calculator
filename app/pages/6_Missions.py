@@ -339,8 +339,17 @@ def _render_browser_parse(key_prefix: str, on_success, *, success_message) -> No
     if not result.get("ok"):
         st.error(f"Could not read '{result.get('filename')}': {result.get('error')}")
         return
+    # Unknown keys are dropped rather than passed through, because the browser
+    # parser and this model are deployed independently: the browser caches
+    # dataflash_parser.js, and a server that has not restarted yet still holds
+    # the old FlightLogSummary. Either side can therefore be a version ahead of
+    # the other, and FlightLogSummary is extra="forbid" - so without this, a
+    # field the other side has not learned about yet (throttle_pct was exactly
+    # this) turns an ordinary deploy window into a hard failure. Fields this
+    # server does not know are simply not data it can use.
+    payload = {k: v for k, v in result["summary"].items() if k in FlightLogSummary.model_fields}
     try:
-        summary = FlightLogSummary.model_validate(result["summary"])
+        summary = FlightLogSummary.model_validate(payload)
     except Exception as exc:  # noqa: BLE001 - a malformed browser-side result must not crash the page
         st.error(f"Browser-parsed log didn't match the expected format: {exc}")
         return
