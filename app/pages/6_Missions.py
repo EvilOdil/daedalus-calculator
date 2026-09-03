@@ -15,6 +15,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from common import get_library, page_header, reload_library
+from components.bin_log_parser import parse_log_in_browser
 from dronecalc.ardupilot_log import LogParseError, parse_log
 from dronecalc.missions import FlightLogSummary, Mission, MissionFlight, SeriesPoint, generate_mission_id
 from dronecalc.physics.atmosphere import grams_to_newtons
@@ -304,6 +305,42 @@ def _throttle_current_curve(mission: Mission, summary: FlightLogSummary):
     if not actual_thr:
         return "no overlapping throttle/voltage/current samples to compare"
     return actual_thr, actual_i, modeled_thr, modeled_i
+
+
+def _render_browser_parse(key_prefix: str, on_success) -> None:
+    """Renders the in-browser log-parsing widget (see `components/bin_log_parser`)
+    and, on a new result, validates it into a `FlightLogSummary` and calls
+    `on_success` - the same callback shape `_start_upload_job` uses, but
+    invoked synchronously: parsing already happened in the browser before
+    Python ever sees a result here, so there is no background job/poll step.
+
+    The component returns its LAST result on every rerun (Streamlit
+    components are stateful that way), so `parsed_at` (fresh on every parse)
+    is used as a "have I already handled this one" marker - the same role
+    `tried_key` plays for the plain `st.file_uploader` call sites.
+    """
+    result = parse_log_in_browser(key=f"{key_prefix}::browser_parse")
+    if result is None:
+        return
+    marker = (
+        result["summary"]["parsed_at"] if result.get("ok")
+        else f"err::{result.get('filename')}::{result.get('error')}"
+    )
+    seen_key = f"{key_prefix}::browser_parse_seen"
+    if st.session_state.get(seen_key) == marker:
+        return
+    st.session_state[seen_key] = marker
+    if not result.get("ok"):
+        st.error(f"Could not read '{result.get('filename')}': {result.get('error')}")
+        return
+    try:
+        summary = FlightLogSummary.model_validate(result["summary"])
+    except Exception as exc:  # noqa: BLE001 - a malformed browser-side result must not crash the page
+        st.error(f"Browser-parsed log didn't match the expected format: {exc}")
+        return
+    on_success(summary)
+    st.success(f"Parsed {summary.source_filename} on your device — flight added.")
+    reload_library()
 
 
 def _render_log_summary(mission: Mission, summary: FlightLogSummary, *, key: str) -> None:
@@ -616,44 +653,50 @@ with browse:
         st.write("")
         st.markdown("##### Add a flight")
         with st.container(border=True):
-            # Polled unconditionally, before the uploader below: see the
-            # matching comment on the attach job in _render_flight_panel.
-            upload_job_key = f"upload_job::{mission.id}"
-            finished_upload = _poll_upload_job(upload_job_key)
-            if finished_upload is not None:
-                if finished_upload.error:
-                    st.error(f"Could not read '{finished_upload.filename}': {finished_upload.error}")
-                else:
-                    st.success("Flight added.")
-                    reload_library()
+            def _on_flight_parsed(summary: FlightLogSummary) -> None:
+                mission.flights.append(MissionFlight(
+                    date=summary.flown_at or summary.log_date, log_summary=summary,
+                ))
+                if not mission.location and summary.takeoff_latlon:
+                    lat, lon = summary.takeoff_latlon
+                    mission.location = f"{lat:.5f}, {lon:.5f}"
+                lib.save("missions", mission)
 
-            uploaded = st.file_uploader(
-                "ArduPilot log", type=["bin", "log"],
-                key=f"upload::{mission.id}", label_visibility="collapsed",
+            add_mode = st.radio(
+                "How to add the log", ["Parse in browser (fast)", "Upload to server"],
+                horizontal=True, label_visibility="collapsed", key=f"add_mode::{mission.id}",
             )
-            # A name-keyed guard, not a confirm button: a new file starts a
-            # background parse job (see _UploadJob) the moment it finishes
-            # uploading. The guard stays set for as long as the uploader
-            # keeps holding this same file - including after the job
-            # completes - so it is never re-started; only the uploader going
-            # empty clears it.
-            tried_key = f"tried_upload::{mission.id}"
-            if uploaded is not None and st.session_state.get(tried_key) != uploaded.name:
-                st.session_state[tried_key] = uploaded.name
+            if add_mode == "Parse in browser (fast)":
+                _render_browser_parse(f"add::{mission.id}", _on_flight_parsed)
+            else:
+                # Polled unconditionally, before the uploader below: see the
+                # matching comment on the attach job in _render_flight_panel.
+                upload_job_key = f"upload_job::{mission.id}"
+                finished_upload = _poll_upload_job(upload_job_key)
+                if finished_upload is not None:
+                    if finished_upload.error:
+                        st.error(f"Could not read '{finished_upload.filename}': {finished_upload.error}")
+                    else:
+                        st.success("Flight added.")
+                        reload_library()
 
-                def _on_success(summary: FlightLogSummary) -> None:
-                    mission.flights.append(MissionFlight(
-                        date=summary.flown_at or summary.log_date, log_summary=summary,
-                    ))
-                    if not mission.location and summary.takeoff_latlon:
-                        lat, lon = summary.takeoff_latlon
-                        mission.location = f"{lat:.5f}, {lon:.5f}"
-                    lib.save("missions", mission)
-
-                _start_upload_job(uploaded, upload_job_key, _on_success)
-                st.rerun()
-            elif uploaded is None:
-                st.session_state.pop(tried_key, None)
+                uploaded = st.file_uploader(
+                    "ArduPilot log", type=["bin", "log"],
+                    key=f"upload::{mission.id}", label_visibility="collapsed",
+                )
+                # A name-keyed guard, not a confirm button: a new file starts a
+                # background parse job (see _UploadJob) the moment it finishes
+                # uploading. The guard stays set for as long as the uploader
+                # keeps holding this same file - including after the job
+                # completes - so it is never re-started; only the uploader going
+                # empty clears it.
+                tried_key = f"tried_upload::{mission.id}"
+                if uploaded is not None and st.session_state.get(tried_key) != uploaded.name:
+                    st.session_state[tried_key] = uploaded.name
+                    _start_upload_job(uploaded, upload_job_key, _on_flight_parsed)
+                    st.rerun()
+                elif uploaded is None:
+                    st.session_state.pop(tried_key, None)
 
             with st.expander("Add manually", icon="✏️"):
                 with st.form(f"add_manual_flight::{mission.id}"):

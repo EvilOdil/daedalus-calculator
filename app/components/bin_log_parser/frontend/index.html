@@ -1,0 +1,136 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  #box {
+    border: 2px dashed #8b949e; border-radius: 8px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px; font-size: 14px; color: #24292f;
+  }
+  #box.dragover { border-color: #0969da; background: #ddf4ff; }
+  #status { flex: 1; }
+  #bar { width: 100%; height: 6px; background: #eaeef2; border-radius: 3px; overflow: hidden; margin-top: 6px; display: none; }
+  #bar-fill { height: 100%; width: 0%; background: #0969da; transition: width 0.1s linear; }
+  #err { color: #cf222e; margin-top: 6px; display: none; }
+  input[type=file] { font-size: 13px; }
+</style>
+</head>
+<body>
+  <div id="box">
+    <div id="status">
+      <div>Drop a <code>.bin</code>/<code>.log</code> here — parsed on this device, never uploaded.</div>
+      <input type="file" id="file-input" accept=".bin,.log" />
+      <div id="bar"><div id="bar-fill"></div></div>
+      <div id="err"></div>
+    </div>
+  </div>
+
+<script src="./dataflash_parser.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // Hand-rolled Streamlit bidirectional-component protocol (no
+  // streamlit-component-lib/React/build step - just the same four
+  // postMessage types that library wraps, confirmed against this app's own
+  // installed Streamlit frontend bundle). See:
+  // https://docs.streamlit.io/develop/concepts/custom-components/create
+  const Streamlit = {
+    _ready: false,
+    init: function () {
+      window.addEventListener("message", (event) => {
+        const data = event.data || {};
+        if (data.type === "streamlit:render") {
+          // No args this component reads today - render is a no-op beyond
+          // the initial DOM, which is already up.
+        }
+      });
+      window.parent.postMessage({ type: "streamlit:componentReady", apiVersion: 1 }, "*");
+      this._ready = true;
+      this.setFrameHeight();
+    },
+    setFrameHeight: function () {
+      const height = document.documentElement.scrollHeight;
+      window.parent.postMessage({ type: "streamlit:setFrameHeight", height }, "*");
+    },
+    setComponentValue: function (value) {
+      window.parent.postMessage({ type: "streamlit:setComponentValue", value, dataType: "json" }, "*");
+    },
+  };
+
+  const box = document.getElementById("box");
+  const statusEl = document.getElementById("status").firstElementChild;
+  const fileInput = document.getElementById("file-input");
+  const bar = document.getElementById("bar");
+  const barFill = document.getElementById("bar-fill");
+  const errEl = document.getElementById("err");
+
+  function setStatus(text) {
+    statusEl.textContent = text;
+    Streamlit.setFrameHeight();
+  }
+
+  function setError(text) {
+    errEl.textContent = text;
+    errEl.style.display = text ? "block" : "none";
+    Streamlit.setFrameHeight();
+  }
+
+  function setProgress(pct) {
+    bar.style.display = "block";
+    barFill.style.width = pct + "%";
+  }
+
+  function handleFile(file) {
+    if (!file) return;
+    setError("");
+    setStatus(`Reading ${file.name}…`);
+    setProgress(0);
+
+    const reader = new FileReader();
+    reader.onerror = () => {
+      setError(`Could not read '${file.name}' from disk.`);
+      setStatus("Drop a .bin/.log here — parsed on this device, never uploaded.");
+    };
+    reader.onload = () => {
+      setStatus(`Parsing ${file.name}…`);
+      // Deferred a tick so the "Parsing…" status actually paints before the
+      // (synchronous, CPU-bound) parse blocks the main thread.
+      setTimeout(() => {
+        try {
+          const t0 = performance.now();
+          const summary = DaedalusLogParser.parseDataflashLog(reader.result, {
+            onProgress: setProgress,
+          });
+          summary.source_filename = file.name;
+          summary.parsed_at = new Date().toISOString();
+          const ms = Math.round(performance.now() - t0);
+          setStatus(`Parsed ${file.name} in ${ms} ms.`);
+          bar.style.display = "none";
+          Streamlit.setComponentValue({ ok: true, summary });
+        } catch (e) {
+          setError(`Could not read '${file.name}' as an ArduPilot log: ${e.message}`);
+          setStatus("Drop a .bin/.log here — parsed on this device, never uploaded.");
+          bar.style.display = "none";
+          Streamlit.setComponentValue({ ok: false, filename: file.name, error: String(e.message || e) });
+        }
+      }, 30);
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));
+  ["dragenter", "dragover"].forEach((ev) =>
+    box.addEventListener(ev, (e) => { e.preventDefault(); box.classList.add("dragover"); })
+  );
+  ["dragleave", "drop"].forEach((ev) =>
+    box.addEventListener(ev, (e) => { e.preventDefault(); box.classList.remove("dragover"); })
+  );
+  box.addEventListener("drop", (e) => handleFile(e.dataTransfer.files[0]));
+
+  Streamlit.init();
+})();
+</script>
+</body>
+</html>
